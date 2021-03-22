@@ -104,11 +104,12 @@ function reset() {
     }
     body.style.backgroundColor = "#232323";
     if(mode == 2){
-        time = 4;
         seconds.style.display = 'inline';
-        seconds.textContent = ' '+'5';
+        seconds.textContent = ' 5';
         resetButton.style.display = 'none';
+        time = 4;
         countdown = setInterval(function(){
+            
             seconds.style.display = 'inline';
             seconds.textContent = ' ' + time;
             body.style.backgroundColor = "#838383";
@@ -128,7 +129,6 @@ function reset() {
             time--;
         },1000);
     }
-       
     else{
         clearInterval(flash);
         clearInterval(countdown);
