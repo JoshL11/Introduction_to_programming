@@ -84,6 +84,8 @@ function initCards() {
 }
 var time;
 function reset() {
+    clearInterval(countdown);
+    clearInterval(flash);
     gameOver = false;
     colors = generateRandomColors(numCards);
     //pick a new random color from array
@@ -109,7 +111,6 @@ function reset() {
         resetButton.style.display = 'none';
         time = 4;
         countdown = setInterval(function(){
-            
             seconds.style.display = 'inline';
             seconds.textContent = ' ' + time;
             body.style.backgroundColor = "#838383";
