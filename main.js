@@ -106,7 +106,7 @@ function reset() {
     if(mode == 2){
         time = 4;
         seconds.style.display = 'inline';
-        seconds.textContent = ' 5';
+        seconds.textContent = ' '+'5';
         resetButton.style.display = 'none';
         countdown = setInterval(function(){
             seconds.style.display = 'inline';
