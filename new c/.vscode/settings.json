@@ -48,6 +48,7 @@
         "xutility": "cpp",
         "deque": "cpp",
         "queue": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "array": "cpp"
     }
 }
