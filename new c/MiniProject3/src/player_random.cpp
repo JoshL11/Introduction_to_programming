@@ -57,10 +57,10 @@ public:
     int cur_player;
     bool done;
     int winner;
+private:
     int get_next_player(int player) const {
         return 3 - player;
     }
-private:
     bool is_spot_on_board(Point p) const {
         return 0 <= p.x && p.x < SIZE && 0 <= p.y && p.y < SIZE;
     }
@@ -122,13 +122,15 @@ public:
                 else if(board[i][j]==WHITE)white++;
             }
         }
-        cur_player = player;
+        
         disc_count[EMPTY] = 64-black-white;
         disc_count[BLACK] = black;
         disc_count[WHITE] = white;
+        cur_player = player;
+        next_valid_spots = get_valid_spots();
         done = false;
         winner = -1;
-        next_valid_spots = get_valid_spots();
+        
     }
     Board(Board const&cur_board) {
         for (int i = 0; i < SIZE; i++) {
@@ -167,12 +169,15 @@ public:
         disc_count[cur_player]++;
         disc_count[EMPTY]--;
         flip_discs(p);
+        // Give control to the other player.
         cur_player = get_next_player(cur_player);
         next_valid_spots = get_valid_spots();
+        // Check Win
         if (next_valid_spots.size() == 0) {
             cur_player = get_next_player(cur_player);
             next_valid_spots = get_valid_spots();
             if (next_valid_spots.size() == 0) {
+                // Game ends
                 done = true;
                 int white_discs = disc_count[WHITE];
                 int black_discs = disc_count[BLACK];
@@ -205,14 +210,14 @@ int get_state_value(Board cur){
     if (cur.winner == player)
         return INT_MAX;
     int state_value[8][8]={
-    10000,  -1000, 100, 60, 60, 100, -1000,  10000,
-    -1000, -1200, 30, 10, 10, 30, -1200, -1000,
-     100,   300, 50, 30, 30, 50,  30 ,   100,
-     60,   100, 30, 10, 10, 30,  100,   60, 
-     60,   100, 30, 10, 10, 30,  100,   60,
-     100,   300, 50, 30, 30, 50,  30 ,   100, 
-    -1000, -1200, 30, 10, 10, 30, -1000, -1000,
-    10000,  -1000, 100, 60, 60, 100,  -1000, 10000,
+    10000,  -1000, 700, 500, 500, 700, -1000,  10000,
+    -1000, -1500, 500, 100, 100, 500, -1500, -1000,
+     700,   100, 50, 30, 30, 50,  100,   700,
+     500,   100, 30, 10, 10, 30,  100,   500, 
+     500,   100, 30, 10, 10, 30,  100,   500,
+     700,   100, 50, 30, 30, 50,  100,   700, 
+    -1000, -1500, 100, 100, 100, 100, -1500, -1000,
+    10000,  -1000, 700, 500, 500, 700,  -1000, 10000,
     };
     int playerh = 0, opponenth = 0;
     for(int i=0;i<8;i++) {
@@ -225,10 +230,9 @@ int get_state_value(Board cur){
         }
     }
     return playerh - opponenth;
-
 }
 Point p;
-static const int DEPTH = 7;
+static const int DEPTH = 5;
 
 int minimax(Board board,int depth, int alpha,int beta,int maxmizingPlayer) {
     if(depth==0 ||board.done) 
