@@ -7,7 +7,7 @@
 #include <ctime>
 using namespace std;
 
-
+#include <limits.h>
 
 #include <iostream>
 #include <fstream>
@@ -19,12 +19,11 @@ using namespace std;
 #include <sstream>
 #include <cassert>
 
-#define INF 0x7FFFFFFF
 
 struct Point {
     Point() : Point(0, 0) {}
-    Point(float x, float y) : x(x), y(y) {}
-    float x, y;
+    Point(int x, int y) : x(x), y(y) {}
+    int x, y;
     bool operator==(const Point& rhs) const {
         return x == rhs.x && y == rhs.y;
     }
@@ -119,14 +118,16 @@ public:
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
                 board[i][j] = new_board[i][j];
-                if(board[i][j]==1)black++;
-                else white++;
+                if(board[i][j]==BLACK)black++;
+                else if(board[i][j]==WHITE)white++;
             }
         }
         cur_player = player;
         disc_count[EMPTY] = 64-black-white;
         disc_count[BLACK] = black;
         disc_count[WHITE] = white;
+        done = false;
+        winner = -1;
         next_valid_spots = get_valid_spots();
     }
     Board(Board const&cur_board) {
@@ -135,10 +136,10 @@ public:
                 board[i][j] = cur_board.board[i][j];
             }
         }
-        cur_player = cur_board.cur_player;
         disc_count[EMPTY] = cur_board.disc_count[EMPTY];
         disc_count[BLACK] = cur_board.disc_count[BLACK];
         disc_count[WHITE] = cur_board.disc_count[WHITE];
+        cur_player = cur_board.cur_player;
         next_valid_spots = cur_board.next_valid_spots;
         done = cur_board.done;
         winner = cur_board.winner;
@@ -190,6 +191,8 @@ int player;
 const int SIZE = 8;
 int board[8][8];
 std::vector<Point> next_valid_spots;
+
+
 void read_board(std::ifstream& fin) {
     fin >> player;
     for (int i = 0; i < SIZE; i++) {
@@ -199,56 +202,63 @@ void read_board(std::ifstream& fin) {
     }
 }
 int get_state_value(Board cur){
+    if (cur.winner == player)
+        return INT_MAX;
     int state_value[8][8]={
-    100,  -15, 10, 6, 6, 10, -15,  100,
-    -15, -40, 3, 1, 1, 3, -40, -15,
-     10,   3, 5, 3, 3, 5,  3,   10,
-     6,   1, 3, 1, 1, 3,  1,   6, 
-     6,   1, 3, 1, 1, 3,  1,   6,
-     10,   3, 5, 3, 3, 5,  3,   10, 
-    -15, -40, 3, 1, 1, 3, -40, -15,
-    100,  -15, 10, 6, 6, 10,  -15, 100,
+    10000,  -1000, 100, 60, 60, 100, -1000,  10000,
+    -1000, -1200, 30, 10, 10, 30, -1200, -1000,
+     100,   300, 50, 30, 30, 50,  30 ,   100,
+     60,   100, 30, 10, 10, 30,  100,   60, 
+     60,   100, 30, 10, 10, 30,  100,   60,
+     100,   300, 50, 30, 30, 50,  30 ,   100, 
+    -1000, -1200, 30, 10, 10, 30, -1000, -1000,
+    10000,  -1000, 100, 60, 60, 100,  -1000, 10000,
     };
-    int white = 0,black = 0;
+    int playerh = 0, opponenth = 0;
     for(int i=0;i<8;i++) {
         for(int j = 0;j<8;j++) {
-            if(cur.board[i][j] == 1) {
-                black += state_value[i][j];
-            } else if(cur.board[i][j] == 2) {
-                white += state_value[i][j];
+            if(cur.board[i][j] == player) {
+                playerh+= state_value[i][j];
+            } else if(cur.board[i][j] == 3 - player) {
+                opponenth += state_value[i][j];
             }
         }
     }
-    if(cur.cur_player == 1) return black;
-    else return white;
-}
+    return playerh - opponenth;
 
-int minimax(Board board,int depth, int maxmizingPlayer) {
-    if(depth == 0) 
+}
+Point p;
+static const int DEPTH = 7;
+
+int minimax(Board board,int depth, int alpha,int beta,int maxmizingPlayer) {
+    if(depth==0 ||board.done) 
         return get_state_value(board);
     else {
-            if(maxmizingPlayer == 1){
+        if(maxmizingPlayer == player) {
+            int maxvalue  = INT_MIN;
+            for(auto i : board.next_valid_spots) {
                 Board new_board = board;
-                for(int i=0;i<new_board.next_valid_spots.size();i++) {
-                    new_board.put_disc(next_valid_spots[i]);
-                    int next_player = 2;
-                    int maxvalue  = -INFINITY;
-                    int value = minimax(new_board, depth - 1,next_player );
-                    maxvalue = max(value,maxvalue);
-                    return maxvalue;
+                new_board.put_disc(i);
+                int value = minimax(new_board, depth - 1, alpha, beta,3 - maxmizingPlayer );
+                if(depth == DEPTH  && value > maxvalue) {
+                    p = i;
                 }
-            } else {
-                Board new_board = board;
-                for(int i=0;i<new_board.next_valid_spots.size();i++) {
-                    new_board.put_disc(next_valid_spots[i]);
-                    int next_player = 1;
-                    int minvalue  = INFINITY;
-                    int value = minimax(new_board, depth - 1,next_player ); 
-                    minvalue = min(value,minvalue);
-                    return minvalue;
+                maxvalue = max(value,maxvalue);
+                alpha = max(maxvalue,alpha);
+                if(alpha >= beta) break;
             }
-            
-            
+            return maxvalue;
+        } else if(maxmizingPlayer == 3 - player) {
+            int minvalue  = INT_MAX;
+            for(auto i: board.next_valid_spots) {
+                Board new_board = board;
+                new_board.put_disc(i);
+                int value = minimax(new_board, depth - 1,alpha,beta,3 - maxmizingPlayer ); 
+                minvalue = min(value,minvalue);
+                beta = min(beta,minvalue);
+                if(alpha >= beta) break;
+            }
+            return minvalue;
         }
     }
 }
@@ -259,22 +269,11 @@ void read_valid_spots(std::ifstream& fin){
     int x, y;
     for (int i = 0; i < n_valid_spots; i++) {
         fin >> x >> y;
-        next_valid_spots.push_back({(float)x, (float)y});
+        Point z(x,y);
+        next_valid_spots.push_back(z);
     }
 }
 void write_valid_spot(std::ofstream& fout) {
-    int n_valid_spots = next_valid_spots.size();
-    int index = -1;
-    //int alpha = -INF , beta = INF;
-    for(int i=0;i < n_valid_spots;i++){
-        Board next(board , player);
-        next.put_disc(next_valid_spots[i]);
-        int next_player;
-        if(player == 1) next_player = 2;
-        else next_player = 1;
-        int value = minimax(next , 5  , next_player);
-    }
-    Point p = next_valid_spots[index];
     fout << p.x << " " << p.y << std::endl;
     fout.flush();
 }
@@ -284,7 +283,11 @@ int main(int, char** argv) {
     std::ifstream fin(argv[1]);
     std::ofstream fout(argv[2]);
     read_board(fin);
+    int alpha = INT_MIN;
+    int beta = INT_MAX;
     read_valid_spots(fin);
+    Board mainboard(board,player);
+    minimax(mainboard,DEPTH,alpha,beta,player);
     write_valid_spot(fout);
     fin.close();
     fout.close();
